@@ -27,84 +27,21 @@ package java.util;
 import java.io.*;
 
 /**
- * Hash table based implementation of the <tt>Map</tt> interface.  This
- * implementation provides all of the optional map operations, and permits
- * <tt>null</tt> values and the <tt>null</tt> key.  (The <tt>HashMap</tt>
- * class is roughly equivalent to <tt>Hashtable</tt>, except that it is
- * unsynchronized and permits nulls.)  This class makes no guarantees as to
- * the order of the map; in particular, it does not guarantee that the order
- * will remain constant over time.
+ * HashMap允许key values为null（与HashTable的区别仅在于非同步和允许null）
  *
- * <p>This implementation provides constant-time performance for the basic
- * operations (<tt>get</tt> and <tt>put</tt>), assuming the hash function
- * disperses the elements properly among the buckets.  Iteration over
- * collection views requires time proportional to the "capacity" of the
- * <tt>HashMap</tt> instance (the number of buckets) plus its size (the number
- * of key-value mappings).  Thus, it's very important not to set the initial
- * capacity too high (or the load factor too low) if iteration performance is
- * important.
+ * 有两个参数影响HashMap性能：
+ * 1.capacity：hash table的桶数量
+ * 2.load factor（负载因子）：hash table负载程度的度量
  *
- * <p>An instance of <tt>HashMap</tt> has two parameters that affect its
- * performance: <i>initial capacity</i> and <i>load factor</i>.  The
- * <i>capacity</i> is the number of buckets in the hash table, and the initial
- * capacity is simply the capacity at the time the hash table is created.  The
- * <i>load factor</i> is a measure of how full the hash table is allowed to
- * get before its capacity is automatically increased.  When the number of
- * entries in the hash table exceeds the product of the load factor and the
- * current capacity, the hash table is <i>rehashed</i> (that is, internal data
- * structures are rebuilt) so that the hash table has approximately twice the
- * number of buckets.
+ * 当元素数量超过两者乘积时，将rehash
  *
- * <p>As a general rule, the default load factor (.75) offers a good tradeoff
- * between time and space costs.  Higher values decrease the space overhead
- * but increase the lookup cost (reflected in most of the operations of the
- * <tt>HashMap</tt> class, including <tt>get</tt> and <tt>put</tt>).  The
- * expected number of entries in the map and its load factor should be taken
- * into account when setting its initial capacity, so as to minimize the
- * number of rehash operations.  If the initial capacity is greater
- * than the maximum number of entries divided by the load factor, no
- * rehash operations will ever occur.
+ * 一般，默认负载因子（0.75）提供了时间和空间的权衡。
  *
- * <p>If many mappings are to be stored in a <tt>HashMap</tt> instance,
- * creating it with a sufficiently large capacity will allow the mappings to
- * be stored more efficiently than letting it perform automatic rehashing as
- * needed to grow the table.
+ * 注意：HashMap不同同步容器，如果多线程环境下，至少一个线程修改
+ * map结构（添加或删除映射关系，仅修改值不算）需要外部同步。（线程不安全）
  *
- * <p><strong>Note that this implementation is not synchronized.</strong>
- * If multiple threads access a hash map concurrently, and at least one of
- * the threads modifies the map structurally, it <i>must</i> be
- * synchronized externally.  (A structural modification is any operation
- * that adds or deletes one or more mappings; merely changing the value
- * associated with a key that an instance already contains is not a
- * structural modification.)  This is typically accomplished by
- * synchronizing on some object that naturally encapsulates the map.
- *
- * If no such object exists, the map should be "wrapped" using the
- * {@link Collections#synchronizedMap Collections.synchronizedMap}
- * method.  This is best done at creation time, to prevent accidental
- * unsynchronized access to the map:<pre>
- *   Map m = Collections.synchronizedMap(new HashMap(...));</pre>
- *
- * <p>The iterators returned by all of this class's "collection view methods"
- * are <i>fail-fast</i>: if the map is structurally modified at any time after
- * the iterator is created, in any way except through the iterator's own
- * <tt>remove</tt> method, the iterator will throw a
- * {@link ConcurrentModificationException}.  Thus, in the face of concurrent
- * modification, the iterator fails quickly and cleanly, rather than risking
- * arbitrary, non-deterministic behavior at an undetermined time in the
- * future.
- *
- * <p>Note that the fail-fast behavior of an iterator cannot be guaranteed
- * as it is, generally speaking, impossible to make any hard guarantees in the
- * presence of unsynchronized concurrent modification.  Fail-fast iterators
- * throw <tt>ConcurrentModificationException</tt> on a best-effort basis.
- * Therefore, it would be wrong to write a program that depended on this
- * exception for its correctness: <i>the fail-fast behavior of iterators
- * should be used only to detect bugs.</i>
- *
- * <p>This class is a member of the
- * <a href="{@docRoot}/../technotes/guides/collections/index.html">
- * Java Collections Framework</a>.
+ * HashMap迭代器创建后发生结构变化，将直接抛出 ConcurrentModificationException ,
+ * 即 fail-fast（快速失败）处理方式。
  *
  * @param <K> the type of keys maintained by this map
  * @param <V> the type of mapped values
@@ -119,6 +56,8 @@ import java.io.*;
  * @see     TreeMap
  * @see     Hashtable
  * @since   1.2
+ *
+ * @Date 2020/1/19 21:37
  */
 
 public class HashMap<K,V>
@@ -127,58 +66,48 @@ public class HashMap<K,V>
 {
 
     /**
-     * The default initial capacity - MUST be a power of two.
+     * 默认初始容量 （必须是2的幂）
      */
     static final int DEFAULT_INITIAL_CAPACITY = 1 << 4; // aka 16
 
     /**
-     * The maximum capacity, used if a higher value is implicitly specified
-     * by either of the constructors with arguments.
-     * MUST be a power of two <= 1<<30.
+     * 最大容量
      */
     static final int MAXIMUM_CAPACITY = 1 << 30;
 
     /**
-     * The load factor used when none specified in constructor.
+     * 默认负载因子
      */
     static final float DEFAULT_LOAD_FACTOR = 0.75f;
 
     /**
-     * An empty table instance to share when the table is not inflated.
+     * 空表
      */
     static final Entry<?,?>[] EMPTY_TABLE = {};
 
     /**
-     * The table, resized as necessary. Length MUST Always be a power of two.
+     * hash table
      */
     transient Entry<K,V>[] table = (Entry<K,V>[]) EMPTY_TABLE;
 
     /**
-     * The number of key-value mappings contained in this map.
+     * 键值对数目
      */
     transient int size;
 
     /**
-     * The next size value at which to resize (capacity * load factor).
-     * @serial
+     * 阈值 (等于capacity * load factor).
      */
-    // If table == EMPTY_TABLE then this is the initial capacity at which the
-    // table will be created when inflated.
     int threshold;
 
     /**
-     * The load factor for the hash table.
-     *
-     * @serial
+     * 负载因子
      */
     final float loadFactor;
 
     /**
-     * The number of times this HashMap has been structurally modified
-     * Structural modifications are those that change the number of mappings in
-     * the HashMap or otherwise modify its internal structure (e.g.,
-     * rehash).  This field is used to make iterators on Collection-views of
-     * the HashMap fail-fast.  (See ConcurrentModificationException).
+     * HashMap 结构性变化次数
+     * 用于快速失败
      */
     transient int modCount;
 
@@ -239,9 +168,7 @@ public class HashMap<K,V>
     transient int hashSeed = 0;
 
     /**
-     * Constructs an empty <tt>HashMap</tt> with the specified initial
-     * capacity and load factor.
-     *
+     * 构造函数
      * @param  initialCapacity the initial capacity
      * @param  loadFactor      the load factor
      * @throws IllegalArgumentException if the initial capacity is negative
@@ -263,38 +190,28 @@ public class HashMap<K,V>
     }
 
     /**
-     * Constructs an empty <tt>HashMap</tt> with the specified initial
-     * capacity and the default load factor (0.75).
-     *
-     * @param  initialCapacity the initial capacity.
-     * @throws IllegalArgumentException if the initial capacity is negative.
+     * 构造函数，默认负载因子
      */
     public HashMap(int initialCapacity) {
         this(initialCapacity, DEFAULT_LOAD_FACTOR);
     }
 
     /**
-     * Constructs an empty <tt>HashMap</tt> with the default initial capacity
-     * (16) and the default load factor (0.75).
+     * 构造函数，默认初始容量和负载因子
      */
     public HashMap() {
         this(DEFAULT_INITIAL_CAPACITY, DEFAULT_LOAD_FACTOR);
     }
 
     /**
-     * Constructs a new <tt>HashMap</tt> with the same mappings as the
-     * specified <tt>Map</tt>.  The <tt>HashMap</tt> is created with
-     * default load factor (0.75) and an initial capacity sufficient to
-     * hold the mappings in the specified <tt>Map</tt>.
-     *
-     * @param   m the map whose mappings are to be placed in this map
-     * @throws  NullPointerException if the specified map is null
+     * 构造函数，通过map构造
      */
     public HashMap(Map<? extends K, ? extends V> m) {
         this(Math.max((int) (m.size() / DEFAULT_LOAD_FACTOR) + 1,
                 DEFAULT_INITIAL_CAPACITY), DEFAULT_LOAD_FACTOR);
+        //初始化table
         inflateTable(threshold);
-
+        //赋值到新map
         putAllForCreate(m);
     }
 
@@ -320,11 +237,7 @@ public class HashMap<K,V>
     // internal utilities
 
     /**
-     * Initialization hook for subclasses. This method is called
-     * in all constructors and pseudo-constructors (clone, readObject)
-     * after HashMap has been initialized but before any entries have
-     * been inserted.  (In the absence of this method, readObject would
-     * require explicit knowledge of subclasses.)
+     * 子类的初始化钩子
      */
     void init() {
     }
@@ -347,11 +260,7 @@ public class HashMap<K,V>
     }
 
     /**
-     * Retrieve object hash code and applies a supplemental hash function to the
-     * result hash, which defends against poor quality hash functions.  This is
-     * critical because HashMap uses power-of-two length hash tables, that
-     * otherwise encounter collisions for hashCodes that do not differ
-     * in lower bits. Note: Null keys always map to hash 0, thus index 0.
+     * 扰动函数（减少碰撞几率）
      */
     final int hash(Object k) {
         int h = hashSeed;
@@ -369,50 +278,29 @@ public class HashMap<K,V>
     }
 
     /**
-     * Returns index for hash code h.
+     * 确定桶下标
      */
     static int indexFor(int h, int length) {
-        // assert Integer.bitCount(length) == 1 : "length must be a non-zero power of 2";
+        // length必须是2的幂
         return h & (length-1);
     }
 
-    /**
-     * Returns the number of key-value mappings in this map.
-     *
-     * @return the number of key-value mappings in this map
-     */
     public int size() {
         return size;
     }
 
-    /**
-     * Returns <tt>true</tt> if this map contains no key-value mappings.
-     *
-     * @return <tt>true</tt> if this map contains no key-value mappings
-     */
     public boolean isEmpty() {
         return size == 0;
     }
 
     /**
-     * Returns the value to which the specified key is mapped,
-     * or {@code null} if this map contains no mapping for the key.
-     *
-     * <p>More formally, if this map contains a mapping from a key
-     * {@code k} to a value {@code v} such that {@code (key==null ? k==null :
-     * key.equals(k))}, then this method returns {@code v}; otherwise
-     * it returns {@code null}.  (There can be at most one such mapping.)
-     *
-     * <p>A return value of {@code null} does not <i>necessarily</i>
-     * indicate that the map contains no mapping for the key; it's also
-     * possible that the map explicitly maps the key to {@code null}.
-     * The {@link #containsKey containsKey} operation may be used to
-     * distinguish these two cases.
-     *
-     * @see #put(Object, Object)
+     * 获取值
+     * 返回null有两种可能：1.不存在对应的键值对；2.存在key,但值为null
+     * 可以通过 {@link #containsKey containsKey} 进行区分
      */
     public V get(Object key) {
         if (key == null)
+            //获取key为null的值
             return getForNullKey();
         Entry<K,V> entry = getEntry(key);
 
@@ -420,16 +308,13 @@ public class HashMap<K,V>
     }
 
     /**
-     * Offloaded version of get() to look up null keys.  Null keys map
-     * to index 0.  This null case is split out into separate methods
-     * for the sake of performance in the two most commonly used
-     * operations (get and put), but incorporated with conditionals in
-     * others.
+     * 获取null的key对应的值
      */
     private V getForNullKey() {
         if (size == 0) {
             return null;
         }
+        //可见，null的key存放在table[0]中，即第一个桶中
         for (Entry<K,V> e = table[0]; e != null; e = e.next) {
             if (e.key == null)
                 return e.value;
@@ -437,22 +322,13 @@ public class HashMap<K,V>
         return null;
     }
 
-    /**
-     * Returns <tt>true</tt> if this map contains a mapping for the
-     * specified key.
-     *
-     * @param   key   The key whose presence in this map is to be tested
-     * @return <tt>true</tt> if this map contains a mapping for the specified
-     * key.
-     */
+
     public boolean containsKey(Object key) {
         return getEntry(key) != null;
     }
 
     /**
-     * Returns the entry associated with the specified key in the
-     * HashMap.  Returns null if the HashMap contains no mapping
-     * for the key.
+     * 获取Entry
      */
     final Entry<K,V> getEntry(Object key) {
         if (size == 0) {
@@ -460,10 +336,12 @@ public class HashMap<K,V>
         }
 
         int hash = (key == null) ? 0 : hash(key);
+        //确定桶下标后，遍历链表
         for (Entry<K,V> e = table[indexFor(hash, table.length)];
              e != null;
              e = e.next) {
             Object k;
+            //判断key是否相等。先比较的hash值，再比较的地址，最后比较equals
             if (e.hash == hash &&
                     ((k = e.key) == key || (key != null && key.equals(k))))
                 return e;
