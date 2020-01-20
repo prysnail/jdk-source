@@ -111,16 +111,6 @@ public class HashMap<K,V>
      */
     transient int modCount;
 
-    /**
-     * The default threshold of map capacity above which alternative hashing is
-     * used for String keys. Alternative hashing reduces the incidence of
-     * collisions due to weak hash code calculation for String keys.
-     * <p/>
-     * This value may be overridden by defining the system property
-     * {@code jdk.map.althashing.threshold}. A property value of {@code 1}
-     * forces alternative hashing to be used at all times whereas
-     * {@code -1} value ensures that alternative hashing is never used.
-     */
     static final int ALTERNATIVE_HASHING_THRESHOLD_DEFAULT = Integer.MAX_VALUE;
 
     /**
@@ -169,10 +159,6 @@ public class HashMap<K,V>
 
     /**
      * 构造函数
-     * @param  initialCapacity the initial capacity
-     * @param  loadFactor      the load factor
-     * @throws IllegalArgumentException if the initial capacity is negative
-     *         or the load factor is nonpositive
      */
     public HashMap(int initialCapacity, float loadFactor) {
         if (initialCapacity < 0)
@@ -230,6 +216,7 @@ public class HashMap<K,V>
         int capacity = roundUpToPowerOf2(toSize);
 
         threshold = (int) Math.min(capacity * loadFactor, MAXIMUM_CAPACITY + 1);
+        //分配空间
         table = new Entry[capacity];
         initHashSeedAsNeeded(capacity);
     }
@@ -350,27 +337,22 @@ public class HashMap<K,V>
     }
 
     /**
-     * Associates the specified value with the specified key in this map.
-     * If the map previously contained a mapping for the key, the old
-     * value is replaced.
-     *
-     * @param key key with which the specified value is to be associated
-     * @param value value to be associated with the specified key
-     * @return the previous value associated with <tt>key</tt>, or
-     *         <tt>null</tt> if there was no mapping for <tt>key</tt>.
-     *         (A <tt>null</tt> return can also indicate that the map
-     *         previously associated <tt>null</tt> with <tt>key</tt>.)
+     * 插入
      */
     public V put(K key, V value) {
+        //空数组，则分配内存空间（延迟初始化）
         if (table == EMPTY_TABLE) {
             inflateTable(threshold);
         }
+        //null键处理
         if (key == null)
             return putForNullKey(value);
         int hash = hash(key);
         int i = indexFor(hash, table.length);
+        //若key已经存在，则替换
         for (Entry<K,V> e = table[i]; e != null; e = e.next) {
             Object k;
+            //比较值是否相同
             if (e.hash == hash && ((k = e.key) == key || key.equals(k))) {
                 V oldValue = e.value;
                 e.value = value;
@@ -378,16 +360,19 @@ public class HashMap<K,V>
                 return oldValue;
             }
         }
-
+        //key不存在，则新增
         modCount++;
         addEntry(hash, key, value, i);
         return null;
     }
 
     /**
-     * Offloaded version of put for null keys
+     * null键插入
      */
     private V putForNullKey(V value) {
+        /**
+         * null键存放在table[0]中（table[0]中不全是null键）
+         */
         for (Entry<K,V> e = table[0]; e != null; e = e.next) {
             if (e.key == null) {
                 V oldValue = e.value;
@@ -396,7 +381,9 @@ public class HashMap<K,V>
                 return oldValue;
             }
         }
+        //计数增加
         modCount++;
+        //添加Entry
         addEntry(0, null, value, 0);
         return null;
     }
@@ -433,36 +420,29 @@ public class HashMap<K,V>
             putForCreate(e.getKey(), e.getValue());
     }
 
-    /**
-     * Rehashes the contents of this map into a new array with a
-     * larger capacity.  This method is called automatically when the
-     * number of keys in this map reaches its threshold.
-     *
-     * If current capacity is MAXIMUM_CAPACITY, this method does not
-     * resize the map, but sets threshold to Integer.MAX_VALUE.
-     * This has the effect of preventing future calls.
-     *
-     * @param newCapacity the new capacity, MUST be a power of two;
-     *        must be greater than current capacity unless current
-     *        capacity is MAXIMUM_CAPACITY (in which case value
-     *        is irrelevant).
-     */
+
     void resize(int newCapacity) {
         Entry[] oldTable = table;
         int oldCapacity = oldTable.length;
         if (oldCapacity == MAXIMUM_CAPACITY) {
+            //当容量达到最大时，仅调整阈值
             threshold = Integer.MAX_VALUE;
             return;
         }
-
+        //扩容
         Entry[] newTable = new Entry[newCapacity];
+        //数据复制
         transfer(newTable, initHashSeedAsNeeded(newCapacity));
         table = newTable;
         threshold = (int)Math.min(newCapacity * loadFactor, MAXIMUM_CAPACITY + 1);
     }
 
     /**
-     * Transfers all entries from current table to newTable.
+     * 数据传输
+     * 可见，扩容本质是新建一个数组，然后在把数据复制过去，复制过程
+     * 中，元素需要重新定位桶标
+     *
+     * 所以，多次扩容对性能影响很大
      */
     void transfer(Entry[] newTable, boolean rehash) {
         int newCapacity = newTable.length;
@@ -746,32 +726,28 @@ public class HashMap<K,V>
     }
 
     /**
-     * Adds a new entry with the specified key, value and hash code to
-     * the specified bucket.  It is the responsibility of this
-     * method to resize the table if appropriate.
-     *
-     * Subclass overrides this to alter the behavior of put method.
+     * 添加Entry
      */
     void addEntry(int hash, K key, V value, int bucketIndex) {
+        //扩容条件：size大于阈值并且发生碰撞
         if ((size >= threshold) && (null != table[bucketIndex])) {
+            //容量扩为2倍
             resize(2 * table.length);
             hash = (null != key) ? hash(key) : 0;
+            //确定新桶下标
             bucketIndex = indexFor(hash, table.length);
         }
 
         createEntry(hash, key, value, bucketIndex);
     }
 
-    /**
-     * Like addEntry except that this version is used when creating entries
-     * as part of Map construction or "pseudo-construction" (cloning,
-     * deserialization).  This version needn't worry about resizing the table.
-     *
-     * Subclass overrides this to alter the behavior of HashMap(Map),
-     * clone, and readObject.
-     */
+
     void createEntry(int hash, K key, V value, int bucketIndex) {
+        //table下标中第一个元素
         Entry<K,V> e = table[bucketIndex];
+        /**
+         * 构造方法中 next = e; 可见 使用的头插法插入到链表中
+         */
         table[bucketIndex] = new Entry<>(hash, key, value, e);
         size++;
     }
