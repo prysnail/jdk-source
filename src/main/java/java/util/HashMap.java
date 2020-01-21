@@ -772,6 +772,7 @@ public class HashMap<K,V>
         }
 
         final Entry<K,V> nextEntry() {
+            //迭代过程中发生结构性变化，抛出异常，即fast-fail
             if (modCount != expectedModCount)
                 throw new ConcurrentModificationException();
             Entry<K,V> e = next;
