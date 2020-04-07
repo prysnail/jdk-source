@@ -4,90 +4,17 @@ import java.lang.ref.ReferenceQueue;
 
 
 /**
- * Hash table based implementation of the <tt>Map</tt> interface, with
- * <em>weak keys</em>.
- * An entry in a <tt>WeakHashMap</tt> will automatically be removed when
- * its key is no longer in ordinary use.  More precisely, the presence of a
- * mapping for a given key will not prevent the key from being discarded by the
- * garbage collector, that is, made finalizable, finalized, and then reclaimed.
- * When a key has been discarded its entry is effectively removed from the map,
- * so this class behaves somewhat differently from other <tt>Map</tt>
- * implementations.
+ * weakHashMap使用的弱键，键不再使用，对应键值对将自动删除
  *
  * 和HashMap类似，key/value都可以为Null，并且有相似参数capacity、factor，同时也是非同步的。
  *
+ * 部分行为取决于垃圾收集器，所以，有些Map的变量不适合这个类使用。
+ * 因垃圾收集器可能在任何时候回收，所以导致像 size()随着时间值越来越小，还有isEmpty/containsKey等方法
  *
- * <p> This class is intended primarily for use with key objects whose
- * <tt>equals</tt> methods test for object identity using the
- * <tt>==</tt> operator.  Once such a key is discarded it can never be
- * recreated, so it is impossible to do a lookup of that key in a
- * <tt>WeakHashMap</tt> at some later time and be surprised that its entry
- * has been removed.  This class will work perfectly well with key objects
- * whose <tt>equals</tt> methods are not based upon object identity, such
- * as <tt>String</tt> instances.  With such recreatable key objects,
- * however, the automatic removal of <tt>WeakHashMap</tt> entries whose
- * keys have been discarded may prove to be confusing.
- *
- * <p> The behavior of the <tt>WeakHashMap</tt> class depends in part upon
- * the actions of the garbage collector, so several familiar (though not
- * required) <tt>Map</tt> invariants do not hold for this class.  Because
- * the garbage collector may discard keys at any time, a
- * <tt>WeakHashMap</tt> may behave as though an unknown thread is silently
- * removing entries.  In particular, even if you synchronize on a
- * <tt>WeakHashMap</tt> instance and invoke none of its mutator methods, it
- * is possible for the <tt>size</tt> method to return smaller values over
- * time, for the <tt>isEmpty</tt> method to return <tt>false</tt> and
- * then <tt>true</tt>, for the <tt>containsKey</tt> method to return
- * <tt>true</tt> and later <tt>false</tt> for a given key, for the
- * <tt>get</tt> method to return a value for a given key but later return
- * <tt>null</tt>, for the <tt>put</tt> method to return
- * <tt>null</tt> and the <tt>remove</tt> method to return
- * <tt>false</tt> for a key that previously appeared to be in the map, and
- * for successive examinations of the key set, the value collection, and
- * the entry set to yield successively smaller numbers of elements.
- *
- * <p> Each key object in a <tt>WeakHashMap</tt> is stored indirectly as
- * the referent of a weak reference.  Therefore a key will automatically be
- * removed only after the weak references to it, both inside and outside of the
- * map, have been cleared by the garbage collector.
- *
- * <p> <strong>Implementation note:</strong> The value objects in a
- * <tt>WeakHashMap</tt> are held by ordinary strong references.  Thus care
- * should be taken to ensure that value objects do not strongly refer to their
- * own keys, either directly or indirectly, since that will prevent the keys
- * from being discarded.  Note that a value object may refer indirectly to its
- * key via the <tt>WeakHashMap</tt> itself; that is, a value object may
- * strongly refer to some other key object whose associated value object, in
- * turn, strongly refers to the key of the first value object.  If the values
- * in the map do not rely on the map holding strong references to them, one way
- * to deal with this is to wrap values themselves within
- * <tt>WeakReferences</tt> before
- * inserting, as in: <tt>m.put(key, new WeakReference(value))</tt>,
- * and then unwrapping upon each <tt>get</tt>.
- *
- * <p>The iterators returned by the <tt>iterator</tt> method of the collections
- * returned by all of this class's "collection view methods" are
- * <i>fail-fast</i>: if the map is structurally modified at any time after the
- * iterator is created, in any way except through the iterator's own
- * <tt>remove</tt> method, the iterator will throw a {@link
- * ConcurrentModificationException}.  Thus, in the face of concurrent
- * modification, the iterator fails quickly and cleanly, rather than risking
- * arbitrary, non-deterministic behavior at an undetermined time in the future.
- *
- * <p>Note that the fail-fast behavior of an iterator cannot be guaranteed
- * as it is, generally speaking, impossible to make any hard guarantees in the
- * presence of unsynchronized concurrent modification.  Fail-fast iterators
- * throw <tt>ConcurrentModificationException</tt> on a best-effort basis.
- * Therefore, it would be wrong to write a program that depended on this
- * exception for its correctness:  <i>the fail-fast behavior of iterators
- * should be used only to detect bugs.</i>
- *
- * <p>This class is a member of the
- * <a href="{@docRoot}/../technotes/guides/collections/index.html">
- * Java Collections Framework</a>.
- *
- * @param <K> the type of keys maintained by this map
- * @param <V> the type of mapped values
+ * 键对象为弱引用，值对象为强引用
+ * 1. 避免值对象引用自己的键，导致键无法回收
+ * 2. 多个weakHashMap键、值循环引用。如果值不依赖于强引用，一种解决方法是将值对象包装到
+ * weakReferences中，通过 m.put(key,new WeakReference(value))
  *
  * @author      Doug Lea
  * @author      Josh Bloch
@@ -277,7 +204,7 @@ public class WeakHashMap<K,V>
     }
 
     /**
-     * Expunges stale entries from the table.
+     * 删除过时键值对
      */
     private void expungeStaleEntries() {
         for (Object x; (x = queue.poll()) != null; ) {
@@ -668,8 +595,7 @@ public class WeakHashMap<K,V>
     }
 
     /**
-     * The entries in this hash table extend WeakReference, using its main ref
-     * field as the key.
+     * 继承WeakReference
      */
     private static class Entry<K,V> extends WeakReference<Object> implements Map.Entry<K,V> {
         V value;
