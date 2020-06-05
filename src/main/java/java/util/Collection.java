@@ -92,27 +92,10 @@ public interface Collection<E> extends Iterable<E> {
     Object[] toArray();
 
     /**
-     * Returns an array containing all of the elements in this collection;
-     * the runtime type of the returned array is that of the specified array.
-     * If the collection fits in the specified array, it is returned therein.
-     * Otherwise, a new array is allocated with the runtime type of the
-     * specified array and the size of this collection.
      *
-     * <p>If this collection fits in the specified array with room to spare
-     * (i.e., the array has more elements than this collection), the element
-     * in the array immediately following the end of the collection is set to
-     * <tt>null</tt>.  (This is useful in determining the length of this
-     * collection <i>only</i> if the caller knows that this collection does
-     * not contain any <tt>null</tt> elements.)
+     * 数组空间 > 集合元素空间：多余空间补null
      *
-     * <p>If this collection makes any guarantees as to what order its elements
-     * are returned by its iterator, this method must return the elements in
-     * the same order.
-     *
-     * <p>Like the {@link #toArray()} method, this method acts as bridge between
-     * array-based and collection-based APIs.  Further, this method allows
-     * precise control over the runtime type of the output array, and may,
-     * under certain circumstances, be used to save allocation costs.
+     * 具备和<tt>toArray()</tt>一样的特性
      *
      * <p>Suppose <tt>x</tt> is a collection known to contain only strings.
      * The following code can be used to dump the collection into a newly
@@ -127,11 +110,9 @@ public interface Collection<E> extends Iterable<E> {
      * @param a the array into which the elements of this collection are to be
      *        stored, if it is big enough; otherwise, a new array of the same
      *        runtime type is allocated for this purpose.
-     * @return an array containing all of the elements in this collection
-     * @throws ArrayStoreException if the runtime type of the specified array
-     *         is not a supertype of the runtime type of every element in
-     *         this collection
-     * @throws NullPointerException if the specified array is null
+     *
+     * @throws ArrayStoreException 数组不是集合的超类型时
+     * @throws NullPointerException 数组null时
      */
     <T> T[] toArray(T[] a);
 
@@ -185,34 +166,8 @@ public interface Collection<E> extends Iterable<E> {
     // Comparison and hashing
 
     /**
-     * Compares the specified object with this collection for equality. <p>
      *
-     * While the <tt>Collection</tt> interface adds no stipulations to the
-     * general contract for the <tt>Object.equals</tt>, programmers who
-     * implement the <tt>Collection</tt> interface "directly" (in other words,
-     * create a class that is a <tt>Collection</tt> but is not a <tt>Set</tt>
-     * or a <tt>List</tt>) must exercise care if they choose to override the
-     * <tt>Object.equals</tt>.  It is not necessary to do so, and the simplest
-     * course of action is to rely on <tt>Object</tt>'s implementation, but
-     * the implementor may wish to implement a "value comparison" in place of
-     * the default "reference comparison."  (The <tt>List</tt> and
-     * <tt>Set</tt> interfaces mandate such value comparisons.)<p>
-     *
-     * The general contract for the <tt>Object.equals</tt> method states that
-     * equals must be symmetric (in other words, <tt>a.equals(b)</tt> if and
-     * only if <tt>b.equals(a)</tt>).  The contracts for <tt>List.equals</tt>
-     * and <tt>Set.equals</tt> state that lists are only equal to other lists,
-     * and sets to other sets.  Thus, a custom <tt>equals</tt> method for a
-     * collection class that implements neither the <tt>List</tt> nor
-     * <tt>Set</tt> interface must return <tt>false</tt> when this collection
-     * is compared to any list or set.  (By the same logic, it is not possible
-     * to write a class that correctly implements both the <tt>Set</tt> and
-     * <tt>List</tt> interfaces.)
-     *
-     * @param o object to be compared for equality with this collection
-     * @return <tt>true</tt> if the specified object is equal to this
-     * collection
-     *
+     *  如果需要值比较，则覆盖 <tt>Object.equals</tt>
      * @see Object#equals(Object)
      * @see Set#equals(Object)
      * @see List#equals(Object)
@@ -220,16 +175,9 @@ public interface Collection<E> extends Iterable<E> {
     boolean equals(Object o);
 
     /**
-     * Returns the hash code value for this collection.  While the
-     * <tt>Collection</tt> interface adds no stipulations to the general
-     * contract for the <tt>Object.hashCode</tt> method, programmers should
-     * take note that any class that overrides the <tt>Object.equals</tt>
-     * method must also override the <tt>Object.hashCode</tt> method in order
-     * to satisfy the general contract for the <tt>Object.hashCode</tt> method.
-     * In particular, <tt>c1.equals(c2)</tt> implies that
-     * <tt>c1.hashCode()==c2.hashCode()</tt>.
+     * 覆盖equals方法必须覆盖hashcode方法
      *
-     * @return the hash code value for this collection
+     * <tt>c1.equals(c2)</tt> implies that <tt>c1.hashCode()==c2.hashCode()</tt>.
      *
      * @see Object#hashCode()
      * @see Object#equals(Object)
